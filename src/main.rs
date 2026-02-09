@@ -185,11 +185,57 @@ mod tests {
         http::{Request, StatusCode},
     };
     use serde_json::from_slice;
+    use std::sync::Mutex;
     use tower::ServiceExt;
 
     const TEST_PRIVATE_KEY_HEX: &str =
         "1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100";
 
+    static ENV_VAR_LOCK: Mutex<()> = Mutex::new(());
+
+    fn with_signing_key_env_cleared<T>(f: impl FnOnce() -> T) -> T {
+        let _guard = ENV_VAR_LOCK.lock().expect("env lock poisoned");
+
+        let previous = std::env::var("ED25519_PRIVATE_KEY_HEX").ok();
+        unsafe {
+            std::env::remove_var("ED25519_PRIVATE_KEY_HEX");
+        }
+
+        let result = f();
+
+        match previous {
+            Some(value) => unsafe {
+                std::env::set_var("ED25519_PRIVATE_KEY_HEX", value);
+            },
+            None => unsafe {
+                std::env::remove_var("ED25519_PRIVATE_KEY_HEX");
+            },
+        }
+
+        result
+    }
+
+    fn with_signing_key_env_set<T>(value: &str, f: impl FnOnce() -> T) -> T {
+        let _guard = ENV_VAR_LOCK.lock().expect("env lock poisoned");
+
+        let previous = std::env::var("ED25519_PRIVATE_KEY_HEX").ok();
+        unsafe {
+            std::env::set_var("ED25519_PRIVATE_KEY_HEX", value);
+        }
+
+        let result = f();
+
+        match previous {
+            Some(previous_value) => unsafe {
+                std::env::set_var("ED25519_PRIVATE_KEY_HEX", previous_value);
+            },
+            None => unsafe {
+                std::env::remove_var("ED25519_PRIVATE_KEY_HEX");
+            },
+        }
+
+        result
+    }
     fn test_signing_key() -> SigningKey {
         let mut secret = [0u8; 32];
         secret.copy_from_slice(&hex::decode(TEST_PRIVATE_KEY_HEX).unwrap());
@@ -211,23 +257,19 @@ mod tests {
 
     #[test]
     fn load_signing_key_requires_env_var() {
-        unsafe {
-            std::env::remove_var("ED25519_PRIVATE_KEY_HEX");
-        }
-
-        let err = load_signing_key().expect_err("expected missing env var to fail");
-        assert!(err.contains("must be set"));
+        with_signing_key_env_cleared(|| {
+            let err = load_signing_key().expect_err("expected missing env var to fail");
+            assert!(err.contains("must be set"));
+        });
     }
 
     #[test]
     fn load_signing_key_accepts_valid_env_var() {
-        unsafe {
-            std::env::set_var("ED25519_PRIVATE_KEY_HEX", TEST_PRIVATE_KEY_HEX);
-        }
-
-        let key = load_signing_key().expect("expected valid env var to parse");
-        let expected = test_signing_key();
-        assert_eq!(key.to_bytes(), expected.to_bytes());
+        with_signing_key_env_set(TEST_PRIVATE_KEY_HEX, || {
+            let key = load_signing_key().expect("expected valid env var to parse");
+            let expected = test_signing_key();
+            assert_eq!(key.to_bytes(), expected.to_bytes());
+        });
     }
 
     #[tokio::test]
