@@ -61,3 +61,11 @@ To smoke-test the distroless container image locally (requires Docker, `curl`, a
 ```bash
 ./scripts/docker-smoke-test.sh
 ```
+
+## OpenAPI
+
+OpenAPI 3.0 spec is available at:
+
+```
+openapi.yaml
+```

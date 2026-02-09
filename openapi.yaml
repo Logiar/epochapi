@@ -1,0 +1,165 @@
+openapi: 3.0.3
+info:
+  title: epochapi
+  version: 1.0.0
+  description: >-
+    Stateless high-performance Rust REST API for current timestamps, signed timestamps,
+    and signature validation.
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: time
+    description: Timestamp endpoints
+  - name: security
+    description: Signed timestamp and validation endpoints
+
+paths:
+  /now:
+    get:
+      tags: [time]
+      summary: Get the current UTC timestamp
+      description: >-
+        Returns the current timestamp in one of the supported formats.
+        By default this endpoint returns plain text; add the `json` query key
+        (for example `?format=iso&json`) to receive a JSON response.
+      parameters:
+        - $ref: '#/components/parameters/FormatQuery'
+        - name: json
+          in: query
+          required: false
+          description: Presence-only key; if present, wraps response in JSON.
+          schema:
+            type: string
+            nullable: true
+      responses:
+        '200':
+          description: Current timestamp
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "1735689600"
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimestampResponse'
+              examples:
+                iso:
+                  value:
+                    format: iso
+                    timestamp: "2026-01-01T00:00:00+00:00"
+        '400':
+          $ref: '#/components/responses/BadRequestText'
+
+  /secnow:
+    get:
+      tags: [security]
+      summary: Get the current UTC timestamp with signature
+      description: >-
+        Returns JSON containing the timestamp, detached signature, and token.
+        Token format is `<format>:<timestamp>.<base64url_signature>`.
+      parameters:
+        - $ref: '#/components/parameters/FormatQuery'
+      responses:
+        '200':
+          description: Signed timestamp payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignedTimestampResponse'
+              examples:
+                iso:
+                  value:
+                    format: iso
+                    timestamp: "2026-01-01T00:00:00+00:00"
+                    signature: "m5A1Vh2fQp7h2NE4q7iVQ9..."
+                    token: "iso:2026-01-01T00:00:00+00:00.m5A1Vh2fQp7h2NE4q7iVQ9..."
+        '400':
+          $ref: '#/components/responses/BadRequestText'
+
+  /validate:
+    post:
+      tags: [security]
+      summary: Validate a signed timestamp payload
+      description: >-
+        Accepts the exact JSON payload returned by `/secnow`.
+        Returns 200 only if all checks pass:
+        - signature in `token` matches `signature` field,
+        - `format` and `timestamp` match the token payload,
+        - Ed25519 signature verifies.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignedTimestampResponse'
+      responses:
+        '200':
+          description: Signature and payload are valid
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: valid
+        '400':
+          description: Signature invalid or payload tampered
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: invalid
+
+components:
+  parameters:
+    FormatQuery:
+      name: format
+      in: query
+      required: false
+      description: Timestamp output format. Defaults to `seconds`.
+      schema:
+        type: string
+        enum: [seconds, ms, ns, iso, sec, s, millis, milliseconds, nanos, nanoseconds]
+        default: seconds
+
+  responses:
+    BadRequestText:
+      description: Bad request (invalid format or invalid payload)
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: "invalid format: use seconds|ms|ns|iso"
+
+  schemas:
+    TimestampResponse:
+      type: object
+      required: [format, timestamp]
+      properties:
+        format:
+          type: string
+          example: iso
+        timestamp:
+          type: string
+          example: "2026-01-01T00:00:00+00:00"
+
+    SignedTimestampResponse:
+      type: object
+      required: [format, timestamp, signature, token]
+      properties:
+        format:
+          type: string
+          description: Echoed format identifier used to generate the timestamp.
+          example: iso
+        timestamp:
+          type: string
+          description: Current timestamp encoded in the selected format.
+          example: "2026-01-01T00:00:00+00:00"
+        signature:
+          type: string
+          description: Base64url (no padding) Ed25519 signature over `<format>:<timestamp>`.
+          example: m5A1Vh2fQp7h2NE4q7iVQ9...
+        token:
+          type: string
+          description: Combined payload and signature.
+          example: "iso:2026-01-01T00:00:00+00:00.m5A1Vh2fQp7h2NE4q7iVQ9..."
