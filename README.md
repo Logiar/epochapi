@@ -62,6 +62,8 @@ To smoke-test the distroless container image locally (requires Docker, `curl`, a
 ./scripts/docker-smoke-test.sh
 ```
 
+The smoke test injects `ED25519_PRIVATE_KEY_HEX` automatically by generating an ephemeral key unless you explicitly provide one in your environment.
+
 ## OpenAPI
 
 OpenAPI 3.0 spec is available at:

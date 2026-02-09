@@ -4,6 +4,17 @@ set -euo pipefail
 IMAGE_NAME=${IMAGE_NAME:-epochapi:test}
 CONTAINER_NAME=${CONTAINER_NAME:-epochapi-smoke}
 PORT=${PORT:-18080}
+PRIVATE_KEY_HEX=${ED25519_PRIVATE_KEY_HEX:-}
+
+if [[ -z "$PRIVATE_KEY_HEX" ]]; then
+  # Generate ephemeral 32-byte key hex for smoke testing only.
+  PRIVATE_KEY_HEX=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+fi
+
+if [[ ! "$PRIVATE_KEY_HEX" =~ ^[0-9a-fA-F]{64}$ ]]; then
+  echo "[docker-smoke] ED25519_PRIVATE_KEY_HEX must be exactly 64 hex chars" >&2
+  exit 1
+fi
 
 cleanup() {
   docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
@@ -16,7 +27,9 @@ echo "[docker-smoke] Building image: $IMAGE_NAME"
 docker build -t "$IMAGE_NAME" .
 
 echo "[docker-smoke] Starting container: $CONTAINER_NAME"
-docker run -d --name "$CONTAINER_NAME" -p "$PORT:8080" "$IMAGE_NAME" >/dev/null
+docker run -d --name "$CONTAINER_NAME" -p "$PORT:8080" \
+  -e "ED25519_PRIVATE_KEY_HEX=$PRIVATE_KEY_HEX" \
+  "$IMAGE_NAME" >/dev/null
 
 for _ in $(seq 1 30); do
   if curl -fsS "http://127.0.0.1:${PORT}/now?format=s" >/dev/null; then
