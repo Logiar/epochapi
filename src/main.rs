@@ -12,9 +12,6 @@ use chrono::Utc;
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
 
-const DEFAULT_DEV_PRIVATE_KEY_HEX: &str =
-    "1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100";
-
 #[derive(Clone)]
 struct AppState {
     signing_key: SigningKey,
@@ -63,8 +60,9 @@ fn build_app(signing_key: SigningKey) -> Router {
 }
 
 fn load_signing_key() -> Result<SigningKey, String> {
-    let raw = std::env::var("ED25519_PRIVATE_KEY_HEX")
-        .unwrap_or_else(|_| DEFAULT_DEV_PRIVATE_KEY_HEX.to_string());
+    let raw = std::env::var("ED25519_PRIVATE_KEY_HEX").map_err(|_| {
+        "ED25519_PRIVATE_KEY_HEX must be set to a 32-byte private key hex value".to_string()
+    })?;
 
     let bytes = hex::decode(&raw)
         .map_err(|_| "ED25519_PRIVATE_KEY_HEX must be valid hex for 32 bytes".to_string())?;
@@ -189,9 +187,12 @@ mod tests {
     use serde_json::from_slice;
     use tower::ServiceExt;
 
+    const TEST_PRIVATE_KEY_HEX: &str =
+        "1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100";
+
     fn test_signing_key() -> SigningKey {
         let mut secret = [0u8; 32];
-        secret.copy_from_slice(&hex::decode(DEFAULT_DEV_PRIVATE_KEY_HEX).unwrap());
+        secret.copy_from_slice(&hex::decode(TEST_PRIVATE_KEY_HEX).unwrap());
         SigningKey::from_bytes(&secret)
     }
 
@@ -206,6 +207,27 @@ mod tests {
     #[test]
     fn format_timestamp_rejects_invalid_format() {
         assert!(format_timestamp("bogus").is_err());
+    }
+
+    #[test]
+    fn load_signing_key_requires_env_var() {
+        unsafe {
+            std::env::remove_var("ED25519_PRIVATE_KEY_HEX");
+        }
+
+        let err = load_signing_key().expect_err("expected missing env var to fail");
+        assert!(err.contains("must be set"));
+    }
+
+    #[test]
+    fn load_signing_key_accepts_valid_env_var() {
+        unsafe {
+            std::env::set_var("ED25519_PRIVATE_KEY_HEX", TEST_PRIVATE_KEY_HEX);
+        }
+
+        let key = load_signing_key().expect("expected valid env var to parse");
+        let expected = test_signing_key();
+        assert_eq!(key.to_bytes(), expected.to_bytes());
     }
 
     #[tokio::test]

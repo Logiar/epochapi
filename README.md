@@ -33,7 +33,7 @@ The API signs timestamps using Ed25519:
 
 - Environment variable: `ED25519_PRIVATE_KEY_HEX`
 - Must be a 32-byte private key represented as hex.
-- If omitted, a fixed development key is used.
+- The service fails to start if this variable is missing.
 
 ## Run locally
 
