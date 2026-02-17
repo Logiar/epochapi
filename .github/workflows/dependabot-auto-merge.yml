@@ -16,7 +16,7 @@ jobs:
   auto-merge:
     runs-on: ubuntu-latest
     # Only run for Dependabot PRs
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.base.ref == 'main'
     steps:
       - name: Enable auto-merge for Dependabot PRs
         run: gh pr merge --auto --squash "$PR_URL"
