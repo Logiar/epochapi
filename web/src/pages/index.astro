@@ -1,0 +1,35 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="epochapi - Trusted Time API">
+  <section class="hero" aria-labelledby="hero-title">
+    <p class="chip">Single source of truth: OpenAPI</p>
+    <h1 id="hero-title">Trusted time for fair systems and offline progress protection.</h1>
+    <p>
+      epochapi gives you a signed, verifiable source of current UTC time. Use it to validate stored
+      timestamps and detect tampering in offline game progression calculations.
+    </p>
+    <p>
+      <a href="/api">Try the API now</a>
+    </p>
+  </section>
+
+  <section class="grid grid-3" aria-label="Core use cases">
+    <article class="panel">
+      <h2>Trusted source for current time</h2>
+      <p>Read current UTC values in multiple formats for consistency across services and clients.</p>
+      <p><a href="/use-cases/trusted-time">Read workflow</a></p>
+    </article>
+    <article class="panel">
+      <h2>Validate stored time values</h2>
+      <p>Attach signatures to captured timestamps so records can be checked for tampering later.</p>
+      <p><a href="/use-cases/validate-stored-time">Read workflow</a></p>
+    </article>
+    <article class="panel">
+      <h2>Prevent offline progress cheating</h2>
+      <p>Compare signed prior snapshots to new submissions to reject impossible progression deltas.</p>
+      <p><a href="/use-cases/prevent-offline-cheating">Read workflow</a></p>
+    </article>
+  </section>
+</BaseLayout>

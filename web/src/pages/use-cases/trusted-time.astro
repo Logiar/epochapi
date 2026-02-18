@@ -1,0 +1,20 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Use Case: Trusted Current Time">
+  <article class="panel">
+    <h1>Trusted source for current time</h1>
+    <p>
+      Use <code>GET /now</code> when you need a neutral server timestamp for ordering events, cooldowns,
+      and clock drift checks.
+    </p>
+    <h2>Flow</h2>
+    <ol>
+      <li>Request <code>/now?format=iso&json</code>.</li>
+      <li>Store timestamp with event data as authoritative time.</li>
+      <li>Compare local clocks against server-provided values when needed.</li>
+    </ol>
+    <pre class="panel code-block"><code>curl "http://localhost:8080/now?format=iso&json"</code></pre>
+  </article>
+</BaseLayout>

@@ -1,0 +1,165 @@
+{
+  "info": {
+    "title": "epochapi",
+    "version": "1.0.0",
+    "description": "Stateless high-performance Rust REST API for current timestamps, signed timestamps, and signature validation."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local development server"
+    }
+  ],
+  "operations": [
+    {
+      "operationId": "getNow",
+      "method": "GET",
+      "path": "/now",
+      "summary": "Get the current UTC timestamp",
+      "description": "Returns the current timestamp in one of the supported formats. By default this endpoint returns plain text; add the `json` query key (for example `?format=iso&json`) to receive a JSON response.",
+      "tags": [
+        "time"
+      ],
+      "parameters": [
+        {
+          "name": "format",
+          "in": "query",
+          "required": false,
+          "description": "Timestamp output format. Defaults to `seconds`.",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "seconds",
+              "ms",
+              "ns",
+              "iso",
+              "sec",
+              "s",
+              "millis",
+              "milliseconds",
+              "nanos",
+              "nanoseconds"
+            ],
+            "default": "seconds"
+          }
+        },
+        {
+          "name": "json",
+          "in": "query",
+          "required": false,
+          "description": "Presence-only key; if present, wraps response in JSON.",
+          "schema": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": [
+        {
+          "status": "200",
+          "description": "Current timestamp",
+          "contentTypes": [
+            "text/plain",
+            "application/json"
+          ]
+        },
+        {
+          "status": "400",
+          "description": "Bad request (invalid format or invalid payload)",
+          "contentTypes": [
+            "text/plain"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "getSecNow",
+      "method": "GET",
+      "path": "/secnow",
+      "summary": "Get the current UTC timestamp with signature",
+      "description": "Returns JSON containing the timestamp, detached signature, and token. Token format is `<format>:<timestamp>.<base64url_signature>`.",
+      "tags": [
+        "security"
+      ],
+      "parameters": [
+        {
+          "name": "format",
+          "in": "query",
+          "required": false,
+          "description": "Timestamp output format. Defaults to `seconds`.",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "seconds",
+              "ms",
+              "ns",
+              "iso",
+              "sec",
+              "s",
+              "millis",
+              "milliseconds",
+              "nanos",
+              "nanoseconds"
+            ],
+            "default": "seconds"
+          }
+        }
+      ],
+      "requestBody": null,
+      "responses": [
+        {
+          "status": "200",
+          "description": "Signed timestamp payload",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "status": "400",
+          "description": "Bad request (invalid format or invalid payload)",
+          "contentTypes": [
+            "text/plain"
+          ]
+        }
+      ]
+    },
+    {
+      "operationId": "postValidate",
+      "method": "POST",
+      "path": "/validate",
+      "summary": "Validate a signed timestamp payload",
+      "description": "Accepts the exact JSON payload returned by `/secnow`. Returns 200 only if all checks pass: - signature in `token` matches `signature` field, - `format` and `timestamp` match the token payload, - Ed25519 signature verifies.",
+      "tags": [
+        "security"
+      ],
+      "parameters": [],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SignedTimestampResponse"
+            }
+          }
+        }
+      },
+      "responses": [
+        {
+          "status": "200",
+          "description": "Signature and payload are valid",
+          "contentTypes": [
+            "text/plain"
+          ]
+        },
+        {
+          "status": "400",
+          "description": "Signature invalid or payload tampered",
+          "contentTypes": [
+            "text/plain"
+          ]
+        }
+      ]
+    }
+  ]
+}

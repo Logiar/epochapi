@@ -1,0 +1,52 @@
+:root {
+  --font-sans: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  --radius-1: 0.4rem;
+  --radius-2: 0.8rem;
+
+  --bg: #f2f5f9;
+  --bg-elev: #ffffff;
+  --bg-soft: #e8eef5;
+  --text: #101722;
+  --text-muted: #33445b;
+  --accent: #0055b8;
+  --accent-strong: #003c83;
+  --border: #b8c6d8;
+  --ok: #006b41;
+  --warn: #9a5c00;
+  --danger: #8d1f26;
+  --focus: #111111;
+
+  --hero-gradient:
+    radial-gradient(circle at 15% 10%, rgb(0 123 255 / 0.18), transparent 40%),
+    radial-gradient(circle at 75% 20%, rgb(2 179 106 / 0.16), transparent 45%),
+    linear-gradient(130deg, #f9fbff 0%, #eef4fb 70%, #e8f0fb 100%);
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1724;
+  --bg-elev: #172438;
+  --bg-soft: #1d2d46;
+  --text: #f5f9ff;
+  --text-muted: #c7d7ed;
+  --accent: #8cc3ff;
+  --accent-strong: #b4d7ff;
+  --border: #476184;
+  --ok: #74e2b2;
+  --warn: #ffd18e;
+  --danger: #ff9ca5;
+  --focus: #ffffff;
+  --hero-gradient:
+    radial-gradient(circle at 10% 5%, rgb(63 151 255 / 0.22), transparent 50%),
+    radial-gradient(circle at 78% 20%, rgb(29 214 143 / 0.18), transparent 45%),
+    linear-gradient(135deg, #0f1724 0%, #112035 65%, #122740 100%);
+}

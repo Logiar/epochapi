@@ -1,0 +1,232 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import docsModel from "../generated/docs-model.json";
+import { buildCurlPreview, fieldConfigForParameter } from "../lib/api-tester";
+
+const apiBase = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+const operations = docsModel.operations.map((op) => ({
+  ...op,
+  formFields: op.parameters.map((param) => ({
+    ...param,
+    ui: fieldConfigForParameter(param),
+  })),
+}));
+---
+
+<BaseLayout title="Interactive API Docs" description="Interact with endpoint contracts generated from openapi.yaml">
+  <section class="panel">
+    <h1>Interactive API reference</h1>
+    <p class="muted">Source: <code>openapi.yaml</code></p>
+    <p>
+      These endpoint definitions are generated from the OpenAPI contract. Test requests below against
+      <code>{apiBase}</code>.
+    </p>
+  </section>
+
+  <section class="grid" aria-label="API operations" style="margin-top: 1rem">
+    {
+      operations.map((op) => (
+        <article class="panel" data-operation-id={op.operationId}>
+          <p class="chip">{op.method}</p>
+          <h2>{op.summary || op.operationId}</h2>
+          <p><code>{op.path}</code></p>
+          <p>{op.description}</p>
+
+          <form class="op-form" aria-describedby={`${op.operationId}-desc`}>
+            <p id={`${op.operationId}-desc`} class="muted">Fields are generated from request parameters.</p>
+            <input type="hidden" name="operationId" value={op.operationId} />
+            {
+              op.formFields.map((field) => (
+                <p>
+                  <label for={`${op.operationId}-${field.name}`}>
+                    {field.name} ({field.in})
+                  </label>
+                  {
+                    field.ui.widget === "select" ? (
+                      <select
+                        id={`${op.operationId}-${field.name}`}
+                        name={field.name}
+                        aria-required={field.required ? "true" : "false"}
+                        required={field.required}
+                      >
+                        {field.ui.options.map((choice) => <option value={choice}>{choice}</option>)}
+                      </select>
+                    ) : field.ui.widget === "checkbox" ? (
+                      <input
+                        id={`${op.operationId}-${field.name}`}
+                        name={field.name}
+                        type="checkbox"
+                        aria-required={field.required ? "true" : "false"}
+                        checked={field.ui.defaultValue === "true"}
+                      />
+                    ) : (
+                      <input
+                        id={`${op.operationId}-${field.name}`}
+                        name={field.name}
+                        type="text"
+                        value={field.ui.defaultValue}
+                        aria-required={field.required ? "true" : "false"}
+                        required={field.required}
+                      />
+                    )
+                  }
+                </p>
+              ))
+            }
+
+            {
+              op.requestBody ? (
+                <p>
+                  <label>
+                    JSON body
+                    <textarea name="requestBody" rows="6"></textarea>
+                  </label>
+                </p>
+              ) : null
+            }
+            <button type="submit">Send request</button>
+          </form>
+          <h3>Curl preview</h3>
+          <p>
+            <button type="button" class="copy-curl-button" data-copy-for={op.operationId}>Copy curl command</button>
+          </p>
+          <pre class="panel"><code class="curl-output">{
+            buildCurlPreview({
+              apiBase,
+              operation: { method: op.method, path: op.path },
+              query: {},
+              body: "",
+            })
+          }</code></pre>
+          <pre class="panel" aria-live="polite"><code class="response-output">No request sent yet.</code></pre>
+        </article>
+      ))
+    }
+  </section>
+
+  <div aria-live="polite" class="sr-only" id="status-region"></div>
+
+  <script define:vars={{ apiBase, operations }}>
+    const byOperation = new Map(operations.map((op) => [op.operationId, op]));
+    const statusRegion = document.getElementById("status-region");
+
+    const toQuery = (operation, data) => {
+      const query = {};
+      for (const param of operation.formFields) {
+        if (param.in !== "query") continue;
+
+        if (param.ui.widget === "checkbox") {
+          if (data.get(param.name) != null) {
+            query[param.name] = "true";
+          }
+          continue;
+        }
+
+        const value = data.get(param.name);
+        if (typeof value === "string" && value.length > 0) {
+          query[param.name] = value;
+        }
+      }
+      return query;
+    };
+
+    const toCurl = ({ operation, query, body }) => {
+      const url = new URL(`${apiBase}${operation.path}`);
+      for (const [key, value] of Object.entries(query)) {
+        if (value) url.searchParams.set(key, value);
+      }
+      const segments = [`curl -X ${operation.method}`, `"${url.toString()}"`];
+      if (body.trim().length > 0) {
+        segments.push("-H \"content-type: application/json\"");
+        const escaped = body.replaceAll("'", "'\\''");
+        segments.push(`-d '${escaped}'`);
+      }
+      return segments.join(" ");
+    };
+
+    const updateCurlPreview = (form, operation, data) => {
+      const container = form.closest("article");
+      const curlOutput = container?.querySelector(".curl-output");
+      if (!curlOutput) return;
+
+      const body = typeof data.get("requestBody") === "string" ? String(data.get("requestBody")) : "";
+      const query = toQuery(operation, data);
+      curlOutput.textContent = toCurl({ operation, query, body });
+    };
+
+    const wireCopyButtons = () => {
+      document.querySelectorAll(".copy-curl-button").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const operationId = button.getAttribute("data-copy-for");
+          const article = operationId
+            ? document.querySelector(`[data-operation-id=\"${operationId}\"]`)
+            : button.closest("article");
+          const curlOutput = article?.querySelector(".curl-output");
+          if (!curlOutput) return;
+
+          const value = curlOutput.textContent ?? "";
+          try {
+            await navigator.clipboard.writeText(value);
+            if (statusRegion) {
+              statusRegion.textContent = `${operationId ?? "operation"} curl command copied`;
+            }
+          } catch {
+            if (statusRegion) {
+              statusRegion.textContent = `${operationId ?? "operation"} curl copy failed`;
+            }
+          }
+        });
+      });
+    };
+
+    document.querySelectorAll(".op-form").forEach((form) => {
+      form.addEventListener("input", () => {
+        const data = new FormData(form);
+        const operationId = String(data.get("operationId"));
+        const operation = byOperation.get(operationId);
+        if (!operation) return;
+        updateCurlPreview(form, operation, data);
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const data = new FormData(form);
+        const operationId = String(data.get("operationId"));
+        const operation = byOperation.get(operationId);
+        const container = form.closest("article");
+        const output = container?.querySelector(".response-output");
+
+        if (!operation || !output) {
+          return;
+        }
+
+        const query = toQuery(operation, data);
+        const queryString = new URLSearchParams(query).toString();
+        const url = `${apiBase}${operation.path}${queryString.length > 0 ? `?${queryString}` : ""}`;
+        const init = { method: operation.method, headers: {} };
+        const body = data.get("requestBody");
+
+        if (typeof body === "string" && body.trim().length > 0) {
+          init.headers["content-type"] = "application/json";
+          init.body = body;
+        }
+
+        try {
+          const response = await fetch(url, init);
+          const text = await response.text();
+          output.textContent = `HTTP ${response.status}\n${text}`;
+          if (statusRegion) {
+            statusRegion.textContent = `${operationId} returned status ${response.status}`;
+          }
+        } catch (error) {
+          output.textContent = `Request failed: ${error instanceof Error ? error.message : String(error)}`;
+          if (statusRegion) {
+            statusRegion.textContent = `${operationId} request failed`;
+          }
+        }
+      });
+    });
+
+    wireCopyButtons();
+  </script>
+</BaseLayout>

@@ -1,0 +1,20 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Use Case: Prevent Offline Progress Cheating">
+  <article class="panel">
+    <h1>Prevent cheating in offline progress calculations</h1>
+    <p>
+      When a player exits, store the signed snapshot from <code>/secnow</code>. On return, validate that
+      snapshot and compute progression based on trusted elapsed time instead of the client clock.
+    </p>
+    <h2>Flow</h2>
+    <ol>
+      <li>Save signed timestamp at logout.</li>
+      <li>On login, validate stored payload with <code>/validate</code>.</li>
+      <li>Use current trusted timestamp from <code>/now</code> to compute elapsed time.</li>
+      <li>Reject impossible progression jumps.</li>
+    </ol>
+  </article>
+</BaseLayout>
