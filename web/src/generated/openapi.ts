@@ -82,17 +82,17 @@ export interface components {
             format: string;
             /**
              * @description Current timestamp encoded in the selected format.
-             * @example 2026-01-01T00:00:00+00:00
+             * @example 2026-02-18T16:13:16.185877387+00:00
              */
             timestamp: string;
             /**
              * @description Base64url (no padding) Ed25519 signature over `<format>:<timestamp>`.
-             * @example m5A1Vh2fQp7h2NE4q7iVQ9...
+             * @example 0JSbPI7xNMJZcfDtSJJyEunLAsyO3n-YpcxjNSwYKpVrHNf987k-GWYbhhDPhBF2pbAssGD5MfMOnneHI82ACQ
              */
             signature: string;
             /**
              * @description Combined payload and signature.
-             * @example iso:2026-01-01T00:00:00+00:00.m5A1Vh2fQp7h2NE4q7iVQ9...
+             * @example iso:2026-02-18T16:13:16.185877387+00:00.0JSbPI7xNMJZcfDtSJJyEunLAsyO3n-YpcxjNSwYKpVrHNf987k-GWYbhhDPhBF2pbAssGD5MfMOnneHI82ACQ
              */
             token: string;
         };
@@ -193,6 +193,15 @@ export interface operations {
             };
             /** @description Signature invalid or payload tampered */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Request body is not a valid SignedTimestampResponse shape */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

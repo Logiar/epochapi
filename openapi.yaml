@@ -74,9 +74,9 @@ paths:
                 iso:
                   value:
                     format: iso
-                    timestamp: "2026-01-01T00:00:00+00:00"
-                    signature: "m5A1Vh2fQp7h2NE4q7iVQ9..."
-                    token: "iso:2026-01-01T00:00:00+00:00.m5A1Vh2fQp7h2NE4q7iVQ9..."
+                    timestamp: "2026-02-18T16:13:16.185877387+00:00"
+                    signature: "0JSbPI7xNMJZcfDtSJJyEunLAsyO3n-YpcxjNSwYKpVrHNf987k-GWYbhhDPhBF2pbAssGD5MfMOnneHI82ACQ"
+                    token: "iso:2026-02-18T16:13:16.185877387+00:00.0JSbPI7xNMJZcfDtSJJyEunLAsyO3n-YpcxjNSwYKpVrHNf987k-GWYbhhDPhBF2pbAssGD5MfMOnneHI82ACQ"
         '400':
           $ref: '#/components/responses/BadRequestText'
 
@@ -112,6 +112,13 @@ paths:
               schema:
                 type: string
                 example: invalid
+        '422':
+          description: Request body is not a valid SignedTimestampResponse shape
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Failed to deserialize the JSON body into the target type"
 
 components:
   parameters:
@@ -157,12 +164,12 @@ components:
         timestamp:
           type: string
           description: Current timestamp encoded in the selected format.
-          example: "2026-01-01T00:00:00+00:00"
+          example: "2026-02-18T16:13:16.185877387+00:00"
         signature:
           type: string
           description: Base64url (no padding) Ed25519 signature over `<format>:<timestamp>`.
-          example: m5A1Vh2fQp7h2NE4q7iVQ9...
+          example: 0JSbPI7xNMJZcfDtSJJyEunLAsyO3n-YpcxjNSwYKpVrHNf987k-GWYbhhDPhBF2pbAssGD5MfMOnneHI82ACQ
         token:
           type: string
           description: Combined payload and signature.
-          example: "iso:2026-01-01T00:00:00+00:00.m5A1Vh2fQp7h2NE4q7iVQ9..."
+          example: "iso:2026-02-18T16:13:16.185877387+00:00.0JSbPI7xNMJZcfDtSJJyEunLAsyO3n-YpcxjNSwYKpVrHNf987k-GWYbhhDPhBF2pbAssGD5MfMOnneHI82ACQ"

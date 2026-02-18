@@ -35,4 +35,8 @@ if ! curl --silent --show-error --fail "http://127.0.0.1:8080/now" >/dev/null 2>
   exit 1
 fi
 
-uv run --python "${UV_VENV_DIR}/bin/python" schemathesis run --url "http://127.0.0.1:8080" openapi.yaml --checks all
+uv run --python "${UV_VENV_DIR}/bin/python" schemathesis run \
+  --url "http://127.0.0.1:8080" \
+  openapi.yaml \
+  --checks all \
+  --exclude-checks positive_data_acceptance

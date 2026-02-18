@@ -158,6 +158,13 @@
           "contentTypes": [
             "text/plain"
           ]
+        },
+        {
+          "status": "422",
+          "description": "Request body is not a valid SignedTimestampResponse shape",
+          "contentTypes": [
+            "text/plain"
+          ]
         }
       ]
     }
