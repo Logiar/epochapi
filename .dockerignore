@@ -1,0 +1,12 @@
+.git
+.github
+.worktrees
+target
+contracts/rust/api_contract/target
+node_modules
+web/node_modules
+web/dist
+web/test-results
+web/playwright-report
+.venv
+.hypothesis
