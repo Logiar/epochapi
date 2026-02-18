@@ -27,6 +27,12 @@ struct TimestampResponse<'a> {
 
 struct ContractSurface;
 
+impl ContractSurface {
+    const INSTANCE: Self = Self;
+}
+
+const _: &dyn EpochApiContract = &ContractSurface::INSTANCE;
+
 impl EpochApiContract for ContractSurface {
     fn get_now(&self) {}
 
