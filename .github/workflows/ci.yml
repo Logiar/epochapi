@@ -7,6 +7,46 @@ on:
   pull_request:
 
 jobs:
+  spec-and-web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci
+        working-directory: web
+
+      - name: Generate artifacts from OpenAPI
+        run: ./scripts/generate-all.sh
+
+      - name: Ensure generated files are up to date
+        run: ./scripts/check-generated-clean.sh
+
+      - name: Build website
+        run: npm run build
+        working-directory: web
+
+      - name: Run web unit tests
+        run: npm run test:unit
+        working-directory: web
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: web
+
+      - name: Run accessibility and UI tests
+        run: npm run test:a11y
+        working-directory: web
+
   rust-tests:
     runs-on: ubuntu-latest
 
@@ -25,6 +65,22 @@ jobs:
 
       - name: Run tests
         run: cargo test --all-targets --all-features
+
+  runtime-contract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Run runtime contract checks
+        run: ./scripts/contract-test.sh
 
   docker-smoke:
     runs-on: ubuntu-latest

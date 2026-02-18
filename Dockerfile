@@ -4,6 +4,8 @@ FROM rust:1.93-bookworm AS builder
 WORKDIR /app
 
 COPY Cargo.toml Cargo.lock* ./
+COPY openapi.yaml ./openapi.yaml
+COPY contracts ./contracts
 COPY src ./src
 
 RUN cargo build --release

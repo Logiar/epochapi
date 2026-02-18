@@ -1,0 +1,19 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Use Case: Validate Stored Time">
+  <article class="panel">
+    <h1>Validate a stored time snapshot</h1>
+    <p>
+      Use <code>GET /secnow</code> to capture signed snapshots, then later submit the exact payload to
+      <code>POST /validate</code> to confirm it was not tampered.
+    </p>
+    <h2>Flow</h2>
+    <ol>
+      <li>Capture signed payload from <code>/secnow</code>.</li>
+      <li>Persist <code>format</code>, <code>timestamp</code>, <code>signature</code>, and <code>token</code>.</li>
+      <li>Send payload to <code>/validate</code> before trusting stored values.</li>
+    </ol>
+  </article>
+</BaseLayout>

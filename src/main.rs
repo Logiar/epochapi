@@ -1,5 +1,6 @@
 use std::{collections::HashMap, net::SocketAddr};
 
+use api_contract::{EpochApiContract, SignedTimestampResponse};
 use axum::{
     extract::{Query, State},
     http::StatusCode,
@@ -10,7 +11,7 @@ use axum::{
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use chrono::Utc;
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 #[derive(Clone)]
 struct AppState {
@@ -24,12 +25,14 @@ struct TimestampResponse<'a> {
     timestamp: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct SignedTimestampResponse {
-    format: String,
-    timestamp: String,
-    signature: String,
-    token: String,
+struct ContractSurface;
+
+impl EpochApiContract for ContractSurface {
+    fn get_now(&self) {}
+
+    fn get_sec_now(&self) {}
+
+    fn post_validate(&self) {}
 }
 
 #[tokio::main]
@@ -270,6 +273,14 @@ mod tests {
             let expected = test_signing_key();
             assert_eq!(key.to_bytes(), expected.to_bytes());
         });
+    }
+
+    #[test]
+    fn generated_contract_exposes_expected_operations() {
+        let operations = api_contract::operation_names();
+        assert!(operations.contains(&"get_now"));
+        assert!(operations.contains(&"get_sec_now"));
+        assert!(operations.contains(&"post_validate"));
     }
 
     #[tokio::test]
