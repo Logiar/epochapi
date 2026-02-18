@@ -59,14 +59,21 @@ function quoteSingle(value: string): string {
 }
 
 export function buildCurlPreview(input: CurlPreviewInput): string {
-  const url = new URL(`${input.apiBase}${input.operation.path}`);
+  const base = input.apiBase.trim();
+  const url = base.length > 0
+    ? new URL(`${base}${input.operation.path}`)
+    : new URL(input.operation.path, "http://example.local");
   for (const [key, value] of Object.entries(input.query)) {
     if (value.length > 0) {
       url.searchParams.set(key, value);
     }
   }
 
-  const segments = [`curl -X ${input.operation.method.toUpperCase()}`, `"${url.toString()}"`];
+  const renderedUrl = base.length > 0
+    ? url.toString()
+    : `${url.pathname}${url.search}`;
+
+  const segments = [`curl -X ${input.operation.method.toUpperCase()}`, `"${renderedUrl}"`];
 
   if (input.body.trim().length > 0) {
     segments.push("-H \"content-type: application/json\"");

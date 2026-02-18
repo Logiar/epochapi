@@ -49,4 +49,19 @@ describe("buildCurlPreview", () => {
     expect(curl).toContain("-H \"content-type: application/json\"");
     expect(curl).toContain("-d '{\"hello\":\"world\"}'");
   });
+
+  it("builds relative curl command when apiBase is empty", () => {
+    const curl = buildCurlPreview({
+      apiBase: "",
+      operation: {
+        method: "GET",
+        path: "/now",
+      },
+      query: { format: "iso" },
+      body: "",
+    });
+
+    expect(curl).toContain("curl -X GET");
+    expect(curl).toContain('"/now?format=iso"');
+  });
 });

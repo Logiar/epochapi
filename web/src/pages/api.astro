@@ -3,7 +3,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import docsModel from "../generated/docs-model.json";
 import { buildCurlPreview, fieldConfigForParameter } from "../lib/api-tester";
 
-const apiBase = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+const apiBase = import.meta.env.PUBLIC_API_BASE_URL ?? "";
+const displayApiBase = apiBase.length > 0 ? apiBase : "(same origin)";
 const operations = docsModel.operations.map((op) => ({
   ...op,
   formFields: op.parameters.map((param) => ({
@@ -19,7 +20,7 @@ const operations = docsModel.operations.map((op) => ({
     <p class="muted">Source: <code>openapi.yaml</code></p>
     <p>
       These endpoint definitions are generated from the OpenAPI contract. Test requests below against
-      <code>{apiBase}</code>.
+      <code>{displayApiBase}</code>.
     </p>
   </section>
 
@@ -131,11 +132,13 @@ const operations = docsModel.operations.map((op) => ({
     };
 
     const toCurl = ({ operation, query, body }) => {
-      const url = new URL(`${apiBase}${operation.path}`);
+      const base = apiBase.length > 0 ? apiBase : window.location.origin;
+      const url = new URL(`${base}${operation.path}`);
       for (const [key, value] of Object.entries(query)) {
         if (value) url.searchParams.set(key, value);
       }
-      const segments = [`curl -X ${operation.method}`, `"${url.toString()}"`];
+      const renderedUrl = apiBase.length > 0 ? url.toString() : `${url.pathname}${url.search}`;
+      const segments = [`curl -X ${operation.method}`, `"${renderedUrl}"`];
       if (body.trim().length > 0) {
         segments.push("-H \"content-type: application/json\"");
         const escaped = body.replaceAll("'", "'\\''");
