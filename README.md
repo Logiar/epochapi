@@ -71,3 +71,53 @@ OpenAPI 3.0 spec is available at:
 ```
 openapi.yaml
 ```
+
+## Spec-first contract workflow
+
+This repository treats `openapi.yaml` as the canonical API contract.
+
+- Web documentation and API tester are generated from the spec.
+- Rust contract interface (`api_contract::EpochApiContract`) is generated from the spec.
+- Backend implementation compiles against that generated trait.
+
+Generate artifacts:
+
+```bash
+./scripts/generate-all.sh
+```
+
+Check generated artifacts are committed and up-to-date:
+
+```bash
+./scripts/check-generated-clean.sh
+```
+
+## Web documentation site
+
+A separate Astro site lives in `web/`.
+
+Install dependencies and build:
+
+```bash
+cd web
+npm install
+npm run build
+npm run test:unit
+npx playwright install chromium
+npm run test:a11y
+```
+
+Run locally:
+
+```bash
+cd web
+PUBLIC_API_BASE_URL=http://localhost:8080 npm run dev
+```
+
+## Runtime contract test
+
+Runtime conformance can be executed with Schemathesis:
+
+```bash
+./scripts/contract-test.sh
+```
