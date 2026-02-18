@@ -121,3 +121,44 @@ Runtime conformance uses `uv` to create a local virtual environment, install Sch
 ```bash
 ./scripts/contract-test.sh
 ```
+
+## Production-like local stack with Docker Compose
+
+The compose setup mirrors a production split-domain topology:
+
+- `example.com` -> docs site (static Astro build)
+- `api.example.com` -> API service
+- `edge` (nginx) acts as the local reverse proxy / ingress
+
+Start the full stack:
+
+```bash
+docker compose up --build
+```
+
+To route `example.com` and `api.example.com` to your local machine, add these host entries:
+
+```text
+127.0.0.1 example.com
+127.0.0.1 api.example.com
+```
+
+Then visit:
+
+- `http://example.com` for docs
+- `http://api.example.com/now?format=iso` for API
+
+### Local development allowances
+
+To keep local debugging convenient, compose also exposes direct ports:
+
+- `http://localhost:3000` -> docs container directly
+- `http://localhost:8080` -> API container directly
+
+These direct ports are a local-only convenience and are not intended as production exposure.
+
+### Distroless docs image
+
+`web/Dockerfile` builds the Astro static site and serves it from a distroless Node runtime.
+This keeps the docs runtime image minimal while still allowing static hosting behavior similar
+to production.
