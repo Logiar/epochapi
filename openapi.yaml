@@ -18,6 +18,7 @@ tags:
 paths:
   /now:
     get:
+      operationId: getNow
       tags: [time]
       summary: Get the current UTC timestamp
       description: >-
@@ -54,6 +55,7 @@ paths:
 
   /secnow:
     get:
+      operationId: getSecNow
       tags: [security]
       summary: Get the current UTC timestamp with signature
       description: >-
@@ -80,6 +82,7 @@ paths:
 
   /validate:
     post:
+      operationId: postValidate
       tags: [security]
       summary: Validate a signed timestamp payload
       description: >-
