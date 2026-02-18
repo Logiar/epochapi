@@ -116,7 +116,7 @@ PUBLIC_API_BASE_URL=http://localhost:8080 npm run dev
 
 ## Runtime contract test
 
-Runtime conformance can be executed with Schemathesis:
+Runtime conformance uses `uv` to create a local virtual environment, install Schemathesis, and run contract checks:
 
 ```bash
 ./scripts/contract-test.sh

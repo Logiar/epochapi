@@ -5,6 +5,13 @@ cd "$(dirname "$0")/.."
 
 export ED25519_PRIVATE_KEY_HEX="1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"
 
+UV_VENV_DIR=".venv"
+if [ ! -x "${UV_VENV_DIR}/bin/python" ]; then
+  uv venv "${UV_VENV_DIR}"
+fi
+
+uv pip install --python "${UV_VENV_DIR}/bin/python" schemathesis
+
 cargo run --release >/tmp/epochapi-contract.log 2>&1 &
 SERVER_PID=$!
 
@@ -28,4 +35,4 @@ if ! curl --silent --show-error --fail "http://127.0.0.1:8080/now" >/dev/null 2>
   exit 1
 fi
 
-schemathesis run --url "http://127.0.0.1:8080" openapi.yaml --checks all
+uv run --python "${UV_VENV_DIR}/bin/python" schemathesis run --url "http://127.0.0.1:8080" openapi.yaml --checks all
