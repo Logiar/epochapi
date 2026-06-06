@@ -2,7 +2,7 @@ use std::{collections::HashMap, net::SocketAddr};
 
 use api_contract::{EpochApiContract, SignedTimestampResponse};
 use axum::{
-    extract::{Query, State},
+    extract::{DefaultBodyLimit, Query, State},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
@@ -64,7 +64,7 @@ fn build_app(signing_key: SigningKey) -> Router {
     Router::new()
         .route("/now", get(now))
         .route("/secnow", get(secnow))
-        .route("/validate", post(validate))
+        .route("/validate", post(validate).layer(DefaultBodyLimit::max(8192)))
         .with_state(state)
 }
 
@@ -72,8 +72,11 @@ fn load_signing_key() -> Result<SigningKey, String> {
     let raw = std::env::var("ED25519_PRIVATE_KEY_HEX").map_err(|_| {
         "ED25519_PRIVATE_KEY_HEX must be set to a 32-byte private key hex value".to_string()
     })?;
+    parse_signing_key_from_hex(&raw)
+}
 
-    let bytes = hex::decode(&raw)
+fn parse_signing_key_from_hex(hex: &str) -> Result<SigningKey, String> {
+    let bytes = hex::decode(hex)
         .map_err(|_| "ED25519_PRIVATE_KEY_HEX must be valid hex for 32 bytes".to_string())?;
 
     if bytes.len() != 32 {
@@ -182,7 +185,7 @@ fn format_timestamp(format: &str) -> Result<String, String> {
             .ok_or_else(|| "timestamp out of range for ns".to_string())?
             .to_string()),
         "iso" => Ok(now.to_rfc3339()),
-        _ => Err("invalid format: use seconds|ms|ns|iso".to_string()),
+        _ => Err("invalid format: use seconds (sec, s), ms (millis, milliseconds), ns (nanos, nanoseconds), or iso".to_string()),
     }
 }
 
@@ -194,57 +197,11 @@ mod tests {
         http::{Request, StatusCode},
     };
     use serde_json::from_slice;
-    use std::sync::Mutex;
     use tower::ServiceExt;
 
     const TEST_PRIVATE_KEY_HEX: &str =
         "1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100";
 
-    static ENV_VAR_LOCK: Mutex<()> = Mutex::new(());
-
-    fn with_signing_key_env_cleared<T>(f: impl FnOnce() -> T) -> T {
-        let _guard = ENV_VAR_LOCK.lock().expect("env lock poisoned");
-
-        let previous = std::env::var("ED25519_PRIVATE_KEY_HEX").ok();
-        unsafe {
-            std::env::remove_var("ED25519_PRIVATE_KEY_HEX");
-        }
-
-        let result = f();
-
-        match previous {
-            Some(value) => unsafe {
-                std::env::set_var("ED25519_PRIVATE_KEY_HEX", value);
-            },
-            None => unsafe {
-                std::env::remove_var("ED25519_PRIVATE_KEY_HEX");
-            },
-        }
-
-        result
-    }
-
-    fn with_signing_key_env_set<T>(value: &str, f: impl FnOnce() -> T) -> T {
-        let _guard = ENV_VAR_LOCK.lock().expect("env lock poisoned");
-
-        let previous = std::env::var("ED25519_PRIVATE_KEY_HEX").ok();
-        unsafe {
-            std::env::set_var("ED25519_PRIVATE_KEY_HEX", value);
-        }
-
-        let result = f();
-
-        match previous {
-            Some(previous_value) => unsafe {
-                std::env::set_var("ED25519_PRIVATE_KEY_HEX", previous_value);
-            },
-            None => unsafe {
-                std::env::remove_var("ED25519_PRIVATE_KEY_HEX");
-            },
-        }
-
-        result
-    }
     fn test_signing_key() -> SigningKey {
         let mut secret = [0u8; 32];
         secret.copy_from_slice(&hex::decode(TEST_PRIVATE_KEY_HEX).unwrap());
@@ -265,20 +222,23 @@ mod tests {
     }
 
     #[test]
-    fn load_signing_key_requires_env_var() {
-        with_signing_key_env_cleared(|| {
-            let err = load_signing_key().expect_err("expected missing env var to fail");
-            assert!(err.contains("must be set"));
-        });
+    fn parse_signing_key_rejects_invalid_hex() {
+        let err = parse_signing_key_from_hex("not-hex!").expect_err("expected invalid hex to fail");
+        assert!(err.contains("valid hex"));
     }
 
     #[test]
-    fn load_signing_key_accepts_valid_env_var() {
-        with_signing_key_env_set(TEST_PRIVATE_KEY_HEX, || {
-            let key = load_signing_key().expect("expected valid env var to parse");
-            let expected = test_signing_key();
-            assert_eq!(key.to_bytes(), expected.to_bytes());
-        });
+    fn parse_signing_key_rejects_wrong_length() {
+        let err = parse_signing_key_from_hex("deadbeef").expect_err("expected wrong length to fail");
+        assert!(err.contains("32-byte"));
+    }
+
+    #[test]
+    fn parse_signing_key_accepts_valid_hex() {
+        let key = parse_signing_key_from_hex(TEST_PRIVATE_KEY_HEX)
+            .expect("expected valid hex to parse");
+        let expected = test_signing_key();
+        assert_eq!(key.to_bytes(), expected.to_bytes());
     }
 
     #[test]

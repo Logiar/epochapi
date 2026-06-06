@@ -64,10 +64,12 @@ fn main() {
     ));
     lines.push("pub trait EpochApiContract {".to_string());
 
-    for (path, methods) in parsed.paths {
+    let mut op_names: Vec<String> = Vec::new();
+    for (path, methods) in &parsed.paths {
         for (http_method, operation) in methods {
-            let method = method_name(&path, &http_method, operation.operation_id.as_deref());
+            let method = method_name(path, http_method, operation.operation_id.as_deref());
             lines.push(format!("    fn {}(&self);", method));
+            op_names.push(method);
         }
     }
 
@@ -76,12 +78,8 @@ fn main() {
     lines.push("pub fn operation_names() -> &'static [&'static str] {".to_string());
     lines.push("    &[".to_string());
 
-    let parsed: OpenApiDoc = serde_yaml::from_str(&spec_raw).expect("invalid openapi.yaml");
-    for (path, methods) in parsed.paths {
-        for (http_method, operation) in methods {
-            let method = method_name(&path, &http_method, operation.operation_id.as_deref());
-            lines.push(format!("        \"{}\",", method));
-        }
+    for name in &op_names {
+        lines.push(format!("        \"{}\",", name));
     }
 
     lines.push("    ]".to_string());
