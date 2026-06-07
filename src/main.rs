@@ -64,7 +64,10 @@ fn build_app(signing_key: SigningKey) -> Router {
     Router::new()
         .route("/now", get(now))
         .route("/secnow", get(secnow))
-        .route("/validate", post(validate).layer(DefaultBodyLimit::max(8192)))
+        .route(
+            "/validate",
+            post(validate).layer(DefaultBodyLimit::max(8192)),
+        )
         .with_state(state)
 }
 
@@ -229,14 +232,15 @@ mod tests {
 
     #[test]
     fn parse_signing_key_rejects_wrong_length() {
-        let err = parse_signing_key_from_hex("deadbeef").expect_err("expected wrong length to fail");
+        let err =
+            parse_signing_key_from_hex("deadbeef").expect_err("expected wrong length to fail");
         assert!(err.contains("32-byte"));
     }
 
     #[test]
     fn parse_signing_key_accepts_valid_hex() {
-        let key = parse_signing_key_from_hex(TEST_PRIVATE_KEY_HEX)
-            .expect("expected valid hex to parse");
+        let key =
+            parse_signing_key_from_hex(TEST_PRIVATE_KEY_HEX).expect("expected valid hex to parse");
         let expected = test_signing_key();
         assert_eq!(key.to_bytes(), expected.to_bytes());
     }
